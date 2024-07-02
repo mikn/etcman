@@ -8,6 +8,8 @@ COMMAND_PATH := /usr/local/sbin/$(COMMAND_NAME)
 PACKAGE_LIST := $(WORK_TREE)/etcman/package-list.conf
 COMPLETION_DIR := /etc/bash_completion.d
 
+DEBUG ?= 0
+
 define ETCMAN_SCRIPT
 #!/bin/sh
 git --git-dir=$(GIT_DIR) --work-tree=$(WORK_TREE) "$$@"
@@ -23,15 +25,13 @@ endef
 
 define UPDATE_PACKAGE_LIST_SCRIPT
 #!/bin/bash
-DEBUG="$(DEBUG)"
+DEBUG=${DEBUG}
 log() {
-	logger -t update-package-list -p user.info "$$1"
+    logger -t update-package-list -p user.info "$$@"
 }
 
 log_debug() {
-    if [ "$$DEBUG" = "1" ]; then
-        logger -t update-package-list -p debug.debug "$$1"
-    fi
+    [ "$$DEBUG" -eq 1 ] && logger -t update-package-list -p user.debug "$$@"
 }
 
 log "Script started at $$(date)"
@@ -54,19 +54,19 @@ for pkg in "$$@"; do
     log_debug "Processing package: $$pkg"
     if [ "$$action" = "install" ]; then
         log_debug "Removing any 'removed' entry for $$pkg"
-        sed -i "/^\[removed\]/,/^\[/ { /^$$pkg$$/d }" "$(PACKAGE_LIST)"
+        sed -i '/^\[removed\]/,/^\[/ { /^'"$$pkg"'$$/d }' "$(PACKAGE_LIST)"
         log_debug "Checking if 'installed' entry exists for $$pkg"
         if ! grep -q "^$$pkg$$" "$(PACKAGE_LIST)"; then
             log "Adding 'installed' entry for $$pkg"
-            sed -i "/^\[installed\]/a $$pkg" "$(PACKAGE_LIST)"
+            sed -i '/^\[installed\]/a '"$$pkg" "$(PACKAGE_LIST)"
         fi
     elif [ "$$action" = "remove" ]; then
         log_debug "Removing any 'installed' entry for $$pkg"
-        sed -i "/^\[installed\]/,/^\[/ { /^$$pkg$$/d }" "$(PACKAGE_LIST)"
+        sed -i '/^\[installed\]/,/^\[/ { /^'"$$pkg"'$$/d }' "$(PACKAGE_LIST)"
         log_debug "Checking if 'removed' entry exists for $$pkg"
         if ! grep -q "^$$pkg$$" "$(PACKAGE_LIST)"; then
             log "Adding 'removed' entry for $$pkg"
-            sed -i "/^\[removed\]/a $$pkg" "$(PACKAGE_LIST)"
+            sed -i '/^\[removed\]/a '"$$pkg" "$(PACKAGE_LIST)"
         fi
     else
         logger -t update-package-list -p user.error "Invalid action: $$action"
@@ -74,8 +74,7 @@ for pkg in "$$@"; do
 done
 
 log_debug "Sorting entries in $(PACKAGE_LIST)"
-sed -i '/^\[installed\]/,/^\[/ { /^\[/!sort }' "$(PACKAGE_LIST)"
-sed -i '/^\[removed\]/,$ { /^\[/!sort }' "$(PACKAGE_LIST)"
+ex -sc 'g/^\[/;/^\[/-sort' -cx $(PACKAGE_LIST)
 
 log "Package list updated. Remember to commit changes manually."
 log "Script finished at $$(date)"
@@ -83,7 +82,7 @@ endef
 
 define APT_HOOK
 DPkg::Pre-Install-Pkgs {
-        "/usr/local/bin/apt-hook-wrapper";
+    "/usr/local/bin/apt-hook-wrapper";
 };
 DPkg::Tools::Options::/usr/local/bin/apt-hook-wrapper::Version "3";
 DPkg::Tools::Options::/usr/local/bin/apt-hook-wrapper::InfoFD "3";
@@ -91,23 +90,21 @@ endef
 
 define APT_HOOK_WRAPPER
 #!/bin/bash
-DEBUG="$(DEBUG)"
+DEBUG=${DEBUG}
 log() {
-	logger -t apt-hook-wrapper -p user.info "$$1"
+    logger -t apt-hook-wrapper -p user.info "$$@"
 }
 
 log_debug() {
-    if [ "$$DEBUG" = "1" ]; then
-        logger -t apt-hook-wrapper -p debug.debug "$$1"
-    fi
+    [ "$$DEBUG" -eq 1 ] && logger -t apt-hook-wrapper -p user.debug "$$@"
 }
 
 log "APT Hook Wrapper started at $$(date)"
 
 # Function to URL decode
 urldecode() {
-    : "$${*//+/ }"
-    echo -e "$${_//%/\\x}"
+    local url_encoded="$${1//+/ }"
+    printf '%b' "$${url_encoded//%/\\x}"
 }
 
 # Read the VERSION line
@@ -123,39 +120,57 @@ fi
 log "Configuration:"
 command_line=""
 while IFS= read -r config_line <&3; do
-    if [[ -z "$$config_line" ]]; then
-        break
-    fi
+    [ -z "$$config_line" ] && break
     log_debug "  $$config_line"
     if [[ "$$config_line" == CommandLine::AsString=* ]]; then
-        command_line="$${config_line#CommandLine::AsString=}"
-        command_line="$$(urldecode "$$command_line")"
+        log_debug "CommandLine detected with contents: $$config_line"
+        encoded_command="$${config_line#CommandLine::AsString=}"
+        command_line="$$(urldecode "$$encoded_command")"
+        log_debug "CommandLine decoded: $$command_line"
     fi
 done
 
-# Check if this is a manual install/remove operation
-is_manual_operation=0
-if [[ "$$command_line" == "apt install "* || "$$command_line" == "apt remove "* || "$$command_line" == "apt purge "* ]]; then
-    is_manual_operation=1
-    log "Manual operation detected: $$command_line"
+# Process command line
+if [[ "$$command_line" == "apt install "* ]]; then
+    action="install"
+    IFS=' ' read -ra packages <<< "$${command_line#apt install }"
+elif [[ "$$command_line" == "apt remove "* ]]; then
+    action="remove"
+    IFS=' ' read -ra packages <<< "$${command_line#apt remove }"
+elif [[ "$$command_line" == "apt purge "* ]]; then
+    action="remove"
+    IFS=' ' read -ra packages <<< "$${command_line#apt purge }"
+else
+    log "Not a manual install/remove/purge operation: $$command_line"
+    exit 0
 fi
+
+log "Manual operation detected: $$command_line"
+log "Action: $$action"
+log "Packages: $${packages[*]}"
+
+# Create an associative array to track manually specified packages
+declare -A manual_packages
+for pkg in "$${packages[@]}"; do
+    manual_packages["$$pkg"]=1
+done
 
 # Process package actions
 log "Package actions:"
 while IFS= read -r action_line <&3; do
     log_debug "  $$action_line"
-    read -r pkg old_ver old_arch old_multi direction new_ver new_arch new_multi action <<< "$$action_line"
-
-    if [ $$is_manual_operation -eq 1 ]; then
-        if [[ "$$action" != "**REMOVE**" && "$$new_ver" != "-" ]]; then
+    read -r pkg old_ver old_arch old_multi direction new_ver new_arch new_multi pkg_action <<< "$$action_line"
+    
+    if [[ -n "$${manual_packages[$$pkg]}" ]]; then
+        if [[ "$$action" == "install" && "$$pkg_action" != "**REMOVE**" && "$$new_ver" != "-" ]]; then
             log "Manually installing: $$pkg ($$new_ver)"
             /usr/local/bin/update-package-list install "$$pkg"
-        elif [[ "$$action" == "**REMOVE**" ]]; then
+        elif [[ "$$action" == "remove" && "$$pkg_action" == "**REMOVE**" ]]; then
             log "Manually removing: $$pkg"
             /usr/local/bin/update-package-list remove "$$pkg"
         fi
     else
-        log "Skipping non-manual operation for $$pkg"
+        log_debug "Skipping non-manually specified package: $$pkg"
     fi
 done
 
@@ -184,10 +199,12 @@ install:
 		echo "Checking out files from remote repository..."; \
 		$(COMMAND_PATH) checkout -f; \
 	fi
-	@echo "Creating initial package list..."
-	mkdir -p $$(dirname $(PACKAGE_LIST))
-	echo "[installed]" > $(PACKAGE_LIST)
-	echo "[removed]" >> $(PACKAGE_LIST)
+	@if [ ! -f $(PACKAGE_LIST) ]; then \
+		@echo "Creating initial package list..." \
+		mkdir -p $$(dirname $(PACKAGE_LIST)); \
+		echo "[installed]" > $(PACKAGE_LIST); \
+		echo "[removed]" >> $(PACKAGE_LIST); \
+	fi
 	@echo "Setting up APT hooks..."
 	mkdir -p /etc/apt/apt.conf.d
 	$(file > /etc/apt/apt.conf.d/80update-package-list,$(APT_HOOK))
@@ -195,7 +212,7 @@ install:
 	chmod +x /usr/local/bin/apt-hook-wrapper
 	$(file > /usr/local/bin/update-package-list,$(UPDATE_PACKAGE_LIST_SCRIPT))
 	chmod +x /usr/local/bin/update-package-list
-	@echo "Installation complete. You may need to start a new shell session for completion to take effect."
+	@echo "Installation complete."
 
 # Uninstall the git repository and restore original files
 .PHONY: uninstall

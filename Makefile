@@ -131,19 +131,25 @@ while IFS= read -r config_line <&3; do
 done
 
 # Process command line
-if [[ "$$command_line" == "apt install "* ]]; then
-    action="install"
-    IFS=' ' read -ra packages <<< "$${command_line#apt install }"
-elif [[ "$$command_line" == "apt remove "* ]]; then
-    action="remove"
-    IFS=' ' read -ra packages <<< "$${command_line#apt remove }"
-elif [[ "$$command_line" == "apt purge "* ]]; then
-    action="remove"
-    IFS=' ' read -ra packages <<< "$${command_line#apt purge }"
-else
-    log "Not a manual install/remove/purge operation: $$command_line"
-    exit 0
-fi
+tool="$${command_line%% *}"  # Extract the first word (apt, apt-get, aptitude)
+command="$${command_line#* }" # Remove the first word
+command="$${command%% *}"  # Extract the second word (install, remove, purge)
+
+case "$$command" in
+    install) action="install";;
+    remove) action="remove";;
+    purge) action="remove";;   # Map purge to remove
+    *) 
+        log "Not a manual install/remove/purge operation: $$command_line"
+        exit 0
+        ;;
+esac
+# Extract package names from command_line
+packages=()                       # Initialize empty array
+read -ra temp_arr <<< "$$command_line"  
+for ((i=2; i<$${#temp_arr[@]}; i++)); do  # Start from index 2 (packages)
+    packages+=("$${temp_arr[i]}")
+done
 
 log "Manual operation detected: $$command_line"
 log "Action: $$action"

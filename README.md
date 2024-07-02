@@ -12,11 +12,11 @@
      \/__/                       \/__/         \/__/         \/__/         \/__/    
 ```
 
-Config management for people who think /etc should stay in /etc, not in a YAML fever dream.
+Config management for that one pet server we all know you have.
 
 ## Why etcman? (aka "The Rant")
 
-Are you tired of writing 50-line playbooks just to change one setting on your own server? Do you shiver, just a little bit, when someone mentions "infrastructure as code"? If you've ever thought, "I just want to edit my damn files" while drowning in a sea of YAML, etcman is your life raft.
+Are you tired of writing 50-line playbooks just to change one setting on your own server? Do you shiver, just a little bit, when someone mentions "infrastructure as code" as solving all problems? If you've ever thought, "I just want to edit my damn files" while drowning in a sea of YAML, etcman is your life raft.
 
 etcman is for the 'get off my lawn' sysadmin in all of us. It's for those who believe the best configuration language is the one you already know: your config files.
 
@@ -29,7 +29,7 @@ etcman is for the 'get off my lawn' sysadmin in all of us. It's for those who be
 
 ## Who Needs This?
 
-- Sysadmins who think `vim` and `git` are perfectly good configuration management tools
+- Sysadmins who think `vim` and `git` are perfectly good configuration management tools when you don't have thousands of servers
 - Anyone who's ever said, "It's just a config file!" and meant it
 - People who believe simplicity is the ultimate sophistication in system management
 - Those who want their system configs backed up, not obfuscated in five layers of abstraction

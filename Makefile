@@ -23,9 +23,16 @@ endef
 
 define UPDATE_PACKAGE_LIST_SCRIPT
 #!/bin/bash
-DEBUG=$(DEBUG)
-alias log='logger -t update-package-list -p user.info'
-[ $$DEBUG -eq 1 ] && alias log_debug='logger -t update-package-list -p debug.debug' || alias log_debug='true'
+DEBUG="$(DEBUG)"
+log() {
+	logger -t update-package-list -p user.info "$$1"
+}
+
+log_debug() {
+    if [ "$$DEBUG" = "1" ]; then
+        logger -t update-package-list -p debug.debug "$$1"
+    fi
+}
 
 log "Script started at $$(date)"
 log_debug "PACKAGE_LIST is set to: $(PACKAGE_LIST)"
@@ -57,7 +64,7 @@ for pkg in "$$@"; do
         log_debug "Removing any 'installed' entry for $$pkg"
         sed -i "/^\[installed\]/,/^\[/ { /^$$pkg$$/d }" "$(PACKAGE_LIST)"
         log_debug "Checking if 'removed' entry exists for $$pkg"
-        if ! grep -qP "^\[removed\]\\n(.*\\n)*$$pkg$$" "$(PACKAGE_LIST)"; then
+        if ! grep -q "^$$pkg$$" "$(PACKAGE_LIST)"; then
             log "Adding 'removed' entry for $$pkg"
             sed -i "/^\[removed\]/a $$pkg" "$(PACKAGE_LIST)"
         fi
@@ -84,9 +91,16 @@ endef
 
 define APT_HOOK_WRAPPER
 #!/bin/bash
-DEBUG=$(DEBUG)
-alias log='logger -t apt-hook-wrapper -p user.info'
-[ $$DEBUG -eq 1 ] && alias log_debug='logger -t apt-hook-wrapper -p debug.debug' || alias log_debug='true'
+DEBUG="$(DEBUG)"
+log() {
+	logger -t apt-hook-wrapper -p user.info "$$1"
+}
+
+log_debug() {
+    if [ "$$DEBUG" = "1" ]; then
+        logger -t apt-hook-wrapper -p debug.debug "$$1"
+    fi
+}
 
 log "APT Hook Wrapper started at $$(date)"
 

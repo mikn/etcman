@@ -38,7 +38,7 @@ If you've ever felt like you're shouting at clouds when dealing with modern conf
 
 ## The Good Stuff (Features, I guess)
 
-- Git-based version control for /etc (because even cavemen had version control), but only the files you actually touched
+- Git-based version control for /etc (but only the files you actually touched)
 - One repository for one server (let's be honest, we all have pets)
 - Tracks only the packages you meant to install (not the 500 dependencies you didn't know about)
 - Debug logging (for when things inevitably go wrong)

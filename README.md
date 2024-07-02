@@ -75,4 +75,3 @@ If you've ever thought, "I just want to edit my config files and commit them wit
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-```

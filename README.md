@@ -1,77 +1,135 @@
-# etcman
-etcman: A Git-based system for managing /etc configurations and tracking manually installed packages on Debian-based systems.
-
 ```
- _____   _____   _____ __  __          _   _ 
-| ____| |_   _| / ____|  \/  |   /\   | \ | |
-|  _|     | |  | |    | \  / |  /  \  |  \| |
-| |___    | |  | |    | |\/| | / /\ \ | . ` |
-|_____|   |_|   \_____|_|  |_|/_/  \_\|_|\__|
+      ___           ___           ___           ___           ___           ___     
+     /\  \         /\  \         /\  \         /\__\         /\  \         /\__\    
+    /::\  \        \:\  \       /::\  \       /::|  |       /::\  \       /::|  |   
+   /:/\:\  \        \:\  \     /:/\:\  \     /:|:|  |      /:/\:\  \     /:|:|  |   
+  /::\~\:\  \       /::\  \   /:/  \:\  \   /:/|:|__|__   /::\~\:\  \   /:/|:|  |__ 
+ /:/\:\ \:\__\     /:/\:\__\ /:/__/ \:\__\ /:/ |::::\__\ /:/\:\ \:\__\ /:/ |:| /\__\
+ \:\~\:\ \/__/    /:/  \/__/ \:\  \  \/__/ \/__/~~/:/  / \/__\:\/:/  / \/__|:|/:/  /
+  \:\ \:\__\     /:/  /       \:\  \             /:/  /       \::/  /      |:/:/  / 
+   \:\ \/__/     \/__/         \:\  \           /:/  /        /:/  /       |::/  /  
+    \:\__\                      \:\__\         /:/  /        /:/  /        /:/  /   
+     \/__/                       \/__/         \/__/         \/__/         \/__/    
 ```
 
-Streamlined Git-based system for managing /etc configurations and tracking manually installed packages on individual Debian-based systems.
+Config management for people who think /etc should stay in /etc, not in a YAML fever dream.
 
-## Motivation
+## Why etcman? (aka "The Rant")
 
-Configuration management and package tracking on Linux systems often involve complex, declarative tools that can be overkill for managing individual machines. etcman was created to provide a simpler, more direct approach:
+Are you tired of writing 50-line playbooks just to change one setting on your own server? Do you shiver, just a little bit, when someone mentions "infrastructure as code"? If you've ever thought, "I just want to edit my damn files" while drowning in a sea of YAML, etcman is your life raft.
 
-- Directly version control your /etc directory
-- Track manually installed packages without extra steps
-- Maintain your usual workflow of editing files directly on the machine
-- Easily backup your system configuration to a remote repository
+etcman is for the 'get off my lawn' sysadmin in all of us. It's for those who believe the best configuration language is the one you already know: your config files.
 
-etcman eliminates the need to copy files back and forth between a management repository and your system. Instead, you work directly in /etc, committing changes once they're working. This approach provides a straightforward backup mechanism for your system configuration, allowing easy recovery if the machine is lost.
+## What etcman Does (Without the Buzzwords)
 
-## Who is this for?
+- Lets you edit files in /etc like a normal person
+- Tracks what you've changed without needing a PhD in Git (a BSc is fine)
+- Remembers what packages you've installed (the ones you actually meant to install)
+- Backs up your stuff without needing a separate degree in cloud engineering
 
-etcman is designed for:
+## Who Needs This?
 
-- Linux users who want a simple way to track changes to their system configuration
-- System administrators managing individual Debian-based machines
-- Anyone who finds tools like Ansible or Puppet too complex for their needs
-- Users who prefer working directly on their system rather than managing configurations externally
-- Those who want an easy way to backup and potentially restore their system configuration
+- Sysadmins who think `vim` and `git` are perfectly good configuration management tools
+- Anyone who's ever said, "It's just a config file!" and meant it
+- People who believe simplicity is the ultimate sophistication in system management
+- Those who want their system configs backed up, not obfuscated in five layers of abstraction
 
-If you've ever thought, "I just want to edit my config files and commit them without all the extra steps," etcman is for you.
+If you've ever felt like you're shouting at clouds when dealing with modern config management tools, welcome home.
 
-## Features
+## The Good Stuff (Features, I guess)
 
-- Direct Git-based version control for /etc
-- Selective package tracking (manual installs/removals only)
-- Simple backup and potential restore mechanism for system configurations
-- Configurable debug logging
-- APT hook integration for automatic package tracking
+- Git-based version control for /etc (because even cavemen had version control), but only the files you actually touched
+- One repository for one server (let's be honest, we all have pets)
+- Tracks only the packages you meant to install (not the 500 dependencies you didn't know about)
+- Debug logging (for when things inevitably go wrong)
+- APT hook integration (fancy words for "it works with your package manager")
 
-## Quick Start
+## Getting Started (It's Not Rocket Science)
 
-1. Clone the repository:
+1. Grab etcman:
    ```
    git clone https://github.com/mikn/etcman.git
    ```
 
-2. Install etcman:
+2. Set it up:
    ```
    cd etcman
    sudo make install
    ```
+3. Connecting to a remote repository (Because Your Configs Deserve the Cloud)
+  (First you create the remote repository, with a suggestive name like `etcman-servername`)
+  ```
+  sudo etcman remote add origin git@github.com:your-user-name/etcman-servername.git
+  ```
 
-3. Use `etcman` to manage your /etc:
+4. Use it (yes, it's that simple):
    ```
    sudo etcman status
    sudo etcman add /etc/some_config_file
-   sudo etcman commit -m "Updated some_config_file"
+   sudo etcman commit -m "Updated some_config_file because I felt like it"
    ```
 
-4. View tracked packages:
+5. See what packages you've doomed your system with:
    ```
    cat /etc/etcman/package-list.conf
    ```
 
-5. Push your changes to a remote backup:
+6. Back it up (because accidents happen):
    ```
    sudo etcman push origin main
    ```
 
-## License
+## etcman and etckeeper: Two Peas in a /etc Pod
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+You might be wondering, "How does etcman compare to the venerable etckeeper?" Great question! Let's take a friendly look at these two tools that both aim to make our lives as sysadmins a bit easier.
+
+### Common Ground (Because Great Minds Think Alike)
+
+- Both track changes in /etc (the heart of your system's soul)
+- Both leverage the power of Git (because Git is awesome)
+- Both can integrate with package managers (teamwork makes the dream work)
+
+### Where etckeeper Shines
+
+1. **Comprehensive Tracking**: 
+   etckeeper diligently tracks every change in /etc. If you want a complete historical record, etckeeper has your back.
+
+2. **Broad VCS Support**: 
+   While etcman is Git-focused, etckeeper supports multiple version control systems. Options are always nice!
+
+3. **Works with most Package Managers**: 
+   etcman only works with APT, etckeeper works with most linux distro package managers! Wooh!
+
+4. **Automatic Commits**: 
+   etckeeper can automatically commit changes made by package managers. It's like having a very attentive secretary for your /etc.
+
+### Where etcman Struts Its Stuff
+
+1. **Focused Package Tracking**: 
+   etcman specifically tracks manually installed packages. It's like having a diary of your intentional system changes.
+
+2. **Simplified Configuration**:
+   With a straightforward Makefile, etcman aims for simplicity in setup and use. Sometimes, less is more!
+
+3. **Emphasis on Manual Changes**:
+   etcman focuses on the changes you make deliberately, helping to separate the signal from the noise.
+
+4. **Backup Philosophy**:
+   etcman keeps your /etc as-is and maintains a separate record of important changes. It's like having a knowledgeable guide for your system's journey.
+
+### Choosing Your /etc Companion
+
+- If you want a detailed, automated history of everything that happens in /etc, etckeeper might be your new best friend.
+- If you prefer a more curated approach that focuses on your manual changes and installations, etcman could be your cup of tea.
+
+The beauty is, there's room for both in the world of system management. etckeeper and etcman are like different flavors of ice cream - both delicious, but catering to different tastes.
+
+Remember, the best tool is the one that fits your workflow and makes your life easier. Whether that's etckeeper, etcman, or a charming combination of both (just don't tell me how you achieved that monstrosity), the important thing is that you're taking steps to manage your system thoughtfully.
+
+After all, in the grand tapestry of system administration, we're all just trying to keep our /etc directories happy and healthy!
+
+## The Fine Print (License)
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. But let's be honest, you weren't going to read that anyway.
+
+Remember, with great power comes great responsibility. Or in this case, with simple tools come fewer headaches. Happy configuring!

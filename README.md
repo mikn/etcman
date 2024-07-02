@@ -86,7 +86,7 @@ You might be wondering, "How does etcman compare to the venerable etckeeper?" Gr
 ### Common Ground (Because Great Minds Think Alike)
 
 - Both track changes in /etc (the heart of your system's soul)
-- Both leverage the power of Git (because Git is awesome)
+- Both leverage the power of Git (because, let's be fair, git won)
 - Both can integrate with package managers (teamwork makes the dream work)
 
 ### Where etckeeper Shines
